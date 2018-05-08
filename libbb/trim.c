@@ -27,11 +27,10 @@ char* FAST_FUNC trim(char *s)
 		}
 	}
 
-	s += len;
 	/* If it was a "const char*" which does not need trimming,
 	 * avoid superfluous store */
 	if (old != len)
-		*s = '\0';
+		s[len] = '\0';
 
 	return s;
 }
