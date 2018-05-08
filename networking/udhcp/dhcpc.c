@@ -1265,6 +1265,7 @@ int udhcpc_main(int argc UNUSED_PARAM, char **argv)
 	IF_FEATURE_UDHCP_PORT(SERVER_PORT = 67;)
 	IF_FEATURE_UDHCP_PORT(CLIENT_PORT = 68;)
 	client_config.interface = "eth0";
+	client_config.dhcp_type = CLIENT_CONFIG_DHCPV4;
 	client_config.script = CONFIG_UDHCPC_DEFAULT_SCRIPT;
 	str_V = "udhcp "BB_VER;
 
@@ -1337,7 +1338,8 @@ int udhcpc_main(int argc UNUSED_PARAM, char **argv)
 	}
 	while (list_x) {
 		char *optstr = xstrdup(llist_pop(&list_x));
-		udhcp_str2optset(optstr, &client_config.options, dhcp_optflags, dhcp_option_strings);
+		udhcp_str2optset(optstr, &client_config.options, dhcp_optflags, dhcp_option_strings,
+				client_config.dhcp_type);
 		free(optstr);
 	}
 

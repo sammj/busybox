@@ -383,7 +383,8 @@ static NOINLINE void attach_option(
 		struct option_set **opt_list,
 		const struct dhcp_optflag *optflag,
 		char *buffer,
-		int length)
+		int length,
+		enum client_addr_type addr_type)
 {
 	struct option_set *existing;
 	char *allocated = NULL;
@@ -450,7 +451,7 @@ static NOINLINE void attach_option(
 	free(allocated);
 }
 
-int FAST_FUNC udhcp_str2optset(const char *const_str, void *arg, const struct dhcp_optflag *optflags, const char *option_strings)
+int FAST_FUNC udhcp_str2optset(const char *const_str, void *arg, const struct dhcp_optflag *optflags, const char *option_strings, enum client_addr_type addr_type)
 {
 	struct option_set **opt_list = arg;
 	char *opt;
@@ -601,7 +602,7 @@ case_OPTION_STRING:
 		}
 
 		if (retval)
-			attach_option(opt_list, optflag, opt, length);
+			attach_option(opt_list, optflag, opt, length, addr_type);
 	} while (retval && (optflag->flags & OPTION_LIST));
 
 	return retval;

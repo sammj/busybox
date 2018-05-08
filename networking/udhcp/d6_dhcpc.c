@@ -1161,6 +1161,7 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 	IF_FEATURE_UDHCP_PORT(SERVER_PORT6 = 547;)
 	IF_FEATURE_UDHCP_PORT(CLIENT_PORT6 = 546;)
 	client_config.interface = "eth0";
+	client_config.dhcp_type = CLIENT_CONFIG_DHCPV6;
 	client_config.script = CONFIG_UDHCPC_DEFAULT_SCRIPT;
 
 	/* Parse command line */
@@ -1217,7 +1218,8 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 	}
 	while (list_x) {
 		char *optstr = xstrdup(llist_pop(&list_x));
-		udhcp_str2optset(optstr, &client_config.options, d6_optflags, d6_option_strings);
+		udhcp_str2optset(optstr, &client_config.options, d6_optflags, d6_option_strings,
+				client_config.dhcp_type);
 		free(optstr);
 	}
 

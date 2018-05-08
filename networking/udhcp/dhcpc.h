@@ -21,6 +21,7 @@ struct client_config_t {
 	uint8_t *vendorclass;           /* Optional vendor class-id to use */
 	uint8_t *hostname;              /* Optional hostname to use */
 	uint8_t *fqdn;                  /* Optional fully qualified domain name to use */
+	enum client_addr_type dhcp_type;
 
 	uint16_t first_secs;
 	uint16_t last_secs;

@@ -181,6 +181,11 @@ enum {
 #define DHCP_MINTYPE DHCPDISCOVER
 #define DHCP_MAXTYPE DHCPINFORM
 
+enum client_addr_type {
+	CLIENT_CONFIG_DHCPV4,
+	CLIENT_CONFIG_DHCPV6,
+};
+
 struct dhcp_optflag {
 	uint8_t flags;
 	uint8_t code;
@@ -293,7 +298,8 @@ int FAST_FUNC udhcp_str2nip(const char *str, void *arg);
 int FAST_FUNC udhcp_str2optset(const char *str,
 		void *arg,
 		const struct dhcp_optflag *optflags,
-		const char *option_strings);
+		const char *option_strings,
+		enum client_addr_type addr_type);
 
 #if ENABLE_UDHCPC || ENABLE_UDHCPD
 void udhcp_init_header(struct dhcp_packet *packet, char type) FAST_FUNC;
