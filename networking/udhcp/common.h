@@ -164,6 +164,10 @@ enum {
 #define OPT_CODE                0
 #define OPT_LEN                 1
 #define OPT_DATA                2
+/* Offsets in option byte sequence for DHCPv6 */
+#define D6_OPT_CODE				0
+#define D6_OPT_LEN				2
+#define D6_OPT_DATA				4
 /* Bits in "overload" option */
 #define OPTION_FIELD            0
 #define FILE_FIELD              1

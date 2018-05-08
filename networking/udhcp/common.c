@@ -411,10 +411,21 @@ static NOINLINE void attach_option(
 		/* make a new option */
 		log2("attaching option %02x to list", optflag->code);
 		new = xmalloc(sizeof(*new));
-		new->data = xmalloc(length + OPT_DATA);
-		new->data[OPT_CODE] = optflag->code;
-		new->data[OPT_LEN] = length;
-		memcpy(new->data + OPT_DATA, (allocated ? allocated : buffer), length);
+		if (addr_type == CLIENT_CONFIG_DHCPV6) {
+			new->data = xmalloc(length + D6_OPT_DATA);
+			new->data[D6_OPT_CODE] = optflag->code >> 8;
+			new->data[D6_OPT_CODE + 1] = optflag->code & 0xff;
+			new->data[D6_OPT_LEN] = length >> 8;
+			new->data[D6_OPT_LEN + 1] = length & 0xff;
+			memcpy(new->data + D6_OPT_DATA, (allocated ? allocated : buffer),
+					length);
+		} else {
+			new->data = xmalloc(length + OPT_DATA);
+			new->data[OPT_CODE] = optflag->code;
+			new->data[OPT_LEN] = length;
+			memcpy(new->data + OPT_DATA, (allocated ? allocated : buffer),
+					length);
+		}
 
 		curr = opt_list;
 		while (*curr && (*curr)->data[OPT_CODE] < optflag->code)

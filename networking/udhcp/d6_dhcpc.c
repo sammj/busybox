@@ -486,8 +486,11 @@ static uint8_t *init_d6_packet(struct d6_packet *packet, char type, uint32_t xid
 
 static uint8_t *add_d6_client_options(uint8_t *ptr)
 {
+	struct option_set *curr;
 	uint8_t *start = ptr;
 	unsigned option;
+	uint16_t len;
+
 
 	ptr += 4;
 	for (option = 1; option < 256; option++) {
@@ -510,7 +513,12 @@ static uint8_t *add_d6_client_options(uint8_t *ptr)
 	ptr = mempcpy(ptr, &opt_fqdn_req, sizeof(opt_fqdn_req));
 #endif
 	/* Add -x options if any */
-	//...
+	curr = client_config.options;
+	while (curr) {
+		len = curr->data[D6_OPT_LEN] << 8 | (curr->data[D6_OPT_LEN + 1] & 0xff);
+		ptr = mempcpy(ptr, curr->data, D6_OPT_DATA + len);
+		curr = curr->next;
+	}
 
 	return ptr;
 }
