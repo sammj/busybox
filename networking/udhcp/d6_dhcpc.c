@@ -1285,7 +1285,7 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 	for (;;) {
 		int tv;
 		struct pollfd pfds[2];
-		struct d6_packet packet;
+		struct d6_packet packet = {};
 		uint8_t *packet_end;
 		/* silence "uninitialized!" warning */
 		unsigned timestamp_before_wait = timestamp_before_wait;
