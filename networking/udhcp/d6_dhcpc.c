@@ -214,7 +214,8 @@ static char** new_env(void)
 	return &client6_data.env_ptr[client6_data.env_idx++];
 }
 
-static char *string_option_to_env(uint8_t *option, uint8_t *option_end)
+static char *string_option_to_env(const uint8_t *option,
+				  const uint8_t *option_end)
 {
 	const char *ptr, *name = NULL;
 	uint8_t val_len;
@@ -246,7 +247,7 @@ static char *string_option_to_env(uint8_t *option, uint8_t *option_end)
 }
 
 /* put all the parameters into the environment */
-static void option_to_env(uint8_t *option, uint8_t *option_end)
+static void option_to_env(const uint8_t *option, const uint8_t *option_end)
 {
 #if ENABLE_FEATURE_UDHCPC6_RFC3646
 	int addrs, option_offset;
@@ -424,7 +425,7 @@ static void option_to_env(uint8_t *option, uint8_t *option_end)
 	}
 }
 
-static char **fill_envp(struct d6_packet *packet)
+static char **fill_envp(const uint8_t *option, const uint8_t *option_end)
 {
 	char **envp, **curr;
 
@@ -433,8 +434,8 @@ static char **fill_envp(struct d6_packet *packet)
 
 	*new_env() = xasprintf("interface=%s", client_config.interface);
 
-	if (packet)
-		option_to_env(packet->d6_options, packet->d6_options + sizeof(packet->d6_options));
+	if (option)
+		option_to_env(option, option_end);
 
 	envp = curr = client6_data.env_ptr;
 	while (*curr)
@@ -444,12 +445,13 @@ static char **fill_envp(struct d6_packet *packet)
 }
 
 /* Call a script with a par file and env vars */
-static void d6_run_script(struct d6_packet *packet, const char *name)
+static void d6_run_script(const uint8_t *option, const uint8_t *option_end,
+                          const char *name)
 {
 	char **envp, **curr;
 	char *argv[3];
 
-	envp = fill_envp(packet);
+	envp = fill_envp(option, option_end);
 
 	/* call script */
 	log1("executing %s %s", client_config.script, name);
@@ -465,6 +467,11 @@ static void d6_run_script(struct d6_packet *packet, const char *name)
 	free(envp);
 }
 
+/* Call a script with a par file and no env var */
+static void d6_run_script_no_option(const char *name)
+{
+	d6_run_script(NULL, NULL, name);
+}
 
 /*** Sending/receiving packets ***/
 
@@ -1041,7 +1048,7 @@ static void perform_renew(void)
 		state = RENEW_REQUESTED;
 		break;
 	case RENEW_REQUESTED: /* impatient are we? fine, square 1 */
-		d6_run_script(NULL, "deconfig");
+		d6_run_script_no_option("deconfig");
 	case REQUESTING:
 	case RELEASED:
 		change_listen_mode(LISTEN_RAW);
@@ -1070,7 +1077,7 @@ static void perform_d6_release(struct in6_addr *server_ipv6, struct in6_addr *ou
  * Users requested to be notified in all cases, even if not in one
  * of the states above.
  */
-	d6_run_script(NULL, "deconfig");
+	d6_run_script_no_option("deconfig");
 	change_listen_mode(LISTEN_NONE);
 	state = RELEASED;
 }
@@ -1278,7 +1285,7 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 	udhcp_sp_setup();
 
 	state = INIT_SELECTING;
-	d6_run_script(NULL, "deconfig");
+	d6_run_script_no_option("deconfig");
 	change_listen_mode(LISTEN_RAW);
 	packet_num = 0;
 	timeout = 0;
@@ -1291,7 +1298,7 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 	for (;;) {
 		int tv;
 		struct pollfd pfds[2];
-		struct d6_packet packet = {};
+		struct d6_packet packet;
 		uint8_t *packet_end;
 		/* silence "uninitialized!" warning */
 		unsigned timestamp_before_wait = timestamp_before_wait;
@@ -1359,7 +1366,7 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 					continue;
 				}
  leasefail:
-				d6_run_script(NULL, "leasefail");
+				d6_run_script_no_option("leasefail");
 #if BB_MMU /* -b is not supported on NOMMU */
 				if (opt & OPT_b) { /* background if no lease */
 					bb_error_msg("no lease, forking to background");
@@ -1433,7 +1440,7 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 				}
 				/* Timed out, enter init state */
 				bb_error_msg("lease lost, entering init state");
-				d6_run_script(NULL, "deconfig");
+				d6_run_script_no_option("deconfig");
 				state = INIT_SELECTING;
 				client_config.first_secs = 0; /* make secs field count from 0 */
 				/*timeout = 0; - already is */
@@ -1540,9 +1547,10 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 				if (option && (option->data[0] | option->data[1]) != 0) {
 					/* return to init state */
 					bb_error_msg("received DHCP NAK (%u)", option->data[4]);
-					d6_run_script(&packet, "nak");
+					d6_run_script(packet.d6_options,
+						      packet_end, "nak");
 					if (state != REQUESTING)
-						d6_run_script(NULL, "deconfig");
+						d6_run_script_no_option("deconfig");
 					change_listen_mode(LISTEN_RAW);
 					sleep(3); /* avoid excessive network traffic */
 					state = INIT_SELECTING;
@@ -1739,7 +1747,9 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 				if (timeout < 0x10)
 					timeout = 0x10;
 				/* enter bound state */
-				d6_run_script(&packet, state == REQUESTING ? "bound" : "renew");
+				d6_run_script(packet.d6_options, packet_end,
+					      (state == REQUESTING ?
+					       "bound" : "renew"));
 
 				state = BOUND;
 				change_listen_mode(LISTEN_NONE);
