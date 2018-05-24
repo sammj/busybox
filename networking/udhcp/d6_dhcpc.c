@@ -289,6 +289,10 @@ static void option_to_env(uint8_t *option, uint8_t *option_end)
  * |                        valid-lifetime                         |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
+			/* Make sure payload contains an address */
+			if (option[3] < 24)
+				break;
+
 			sprint_nip6(ipv6str, option + 4);
 			*new_env() = xasprintf("ipv6=%s", ipv6str);
 
@@ -1287,7 +1291,7 @@ int udhcpc6_main(int argc UNUSED_PARAM, char **argv)
 	for (;;) {
 		int tv;
 		struct pollfd pfds[2];
-		struct d6_packet packet;
+		struct d6_packet packet = {};
 		uint8_t *packet_end;
 		/* silence "uninitialized!" warning */
 		unsigned timestamp_before_wait = timestamp_before_wait;
